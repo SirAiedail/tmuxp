@@ -398,6 +398,7 @@ def load_workspace(
     colors=None,
     detached=False,
     answer_yes=False,
+    tmux_config_file=None,
 ):
     """
     Load a tmux "workspace" session via tmuxp file.
@@ -489,6 +490,12 @@ def load_workspace(
     # get the canonical path, eliminating any symlinks
     config_file = os.path.realpath(config_file)
 
+    # get canonical, exanded path for tmux config file
+    if tmux_config_file != None:
+        tmux_config_file = os.path.expanduser(tmux_config_file)
+        tmux_config_file = os.path.expandvars(tmux_config_file)
+        tmux_config_file = os.path.realpath(tmux_config_file)
+
     # kaptan allows us to open a yaml or json file as a dict
     sconfig = kaptan.Kaptan()
     sconfig = sconfig.import_config(config_file).get()
@@ -498,7 +505,7 @@ def load_workspace(
     sconfig = config.trickle(sconfig)
 
     t = Server(  # create tmux server object
-        socket_name=socket_name, socket_path=socket_path, colors=colors
+        socket_name=socket_name, socket_path=socket_path, colors=colors, config_file=tmux_config_file,
     )
 
     which('tmux')  # raise exception if tmux not found
@@ -759,7 +766,8 @@ def command_freeze(session_name, socket_name, socket_path):
     flag_value=88,
     help='Like -2, but indicates that the terminal supports 88 colours.',
 )
-def command_load(ctx, config, socket_name, socket_path, answer_yes, detached, colors):
+@click.option('-f', 'tmux_config_file', help='pass-through for tmux -f')
+def command_load(ctx, config, socket_name, socket_path, answer_yes, detached, colors, tmux_config_file):
     """Load a tmux workspace from each CONFIG.
 
     CONFIG is a specifier for a configuration file.
@@ -790,6 +798,7 @@ def command_load(ctx, config, socket_name, socket_path, answer_yes, detached, co
         'answer_yes': answer_yes,
         'colors': colors,
         'detached': detached,
+        'tmux_config_file': tmux_config_file,
     }
 
     if not config:
